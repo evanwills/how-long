@@ -1,6 +1,7 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import './how-long-item.js';
+import { formatFloat, getDoW, getTimeZoneOffset } from './utils/general.utils.js';
 
 /**
  * An example element.
@@ -17,7 +18,7 @@ export class HowLong extends LitElement {
   userRefresh: boolean = false;
 
   @property({type: Number})
-  refreshInterval: number = 60000;
+  refreshInterval: number = 0;
 
   /**
    * number of milliseconds difference
@@ -59,14 +60,36 @@ export class HowLong extends LitElement {
    */
   @state()
   y : number = 0;
+  /**
+   * The number of years difference.
+   */
+  @state()
+  epoc : number = 0;
 
+  @state()
+  wd : string = '';
+
+  @state()
+  _whenISO : string = '';
+
+  @state()
+  _currentISO : string = '';
+
+  @state()
   _lastChange : number = 0;
 
+  @state()
+  _timeoutID : number | null = null;
+
+  _timeoutMS : number = 0;
+
+  _tzOffset : string = '';
+
   _setMS(input: string) {
-    console.group('<how-long> _setMS()');
-    console.log('input:', input);
+    // console.group('<how-long> _setMS()');
+    // console.log('input:', input);
     const when = new Date(input);
-    console.log('when:', when);
+    // console.log('when:', when);
 
     if (when.toString() === 'Invalid Date') {
       this.ms = 0;
@@ -82,6 +105,7 @@ export class HowLong extends LitElement {
     }
 
     const now = new Date();
+    this.epoc = when.getTime();
     const tmp = when.getTime() - now.getTime();
     this.ms = (tmp >= 0) ? tmp : -tmp;
     this.s = (this.ms / 1000);
@@ -91,42 +115,109 @@ export class HowLong extends LitElement {
     this.w = (this.ms / (1000 * 60 * 60 * 24 * 7));
     this.mon = (this.ms / (1000 * 60 * 60 * 24 * 30.44));
     this.y = (this.ms / (1000 * 60 * 60 * 24 * 365.25));
+    this.wd = getDoW(when.getDay());
 
+    // console.log('ms:', this.ms);
+    // console.log('s:', this.s);
+    // console.log('min:', this.min);
+    // console.log('h:', this.h);
+    // console.log('d:', this.d);
+    // console.log('w:', this.w);
+    // console.log('mon:', this.mon);
+    // console.log('mon:', this.mon);
+    // console.log('epoc:', this.epoc);
+    // console.log('epoc:', this.epoc);
+    // console.log('wd:', this.wd);
+    // console.groupEnd();
     return when;
   }
 
-  private onChange(e: Event) {
-    const input = e.target as HTMLInputElement
-    const when = this._setMS(input.value)
+  private _dateToISO(input: Date) : string {
+    return input.toISOString().slice(0, 16) + this._tzOffset;
+  }
 
-    if (when !== null && Date.now() - this._lastChange > 60000) {
-      this._lastChange = Date.now();
+  private _refresh() {
+    this._setMS(this._currentISO);
 
-      this.dispatchEvent(
-        new CustomEvent('how-long-change', { detail: when })
-      );
+    if (this._timeoutID !== null) {
+      clearTimeout(this._timeoutID);
     }
+
+    this._timeoutID = window.setTimeout(
+      this._refresh.bind(this),
+      this._timeoutMS,
+    );
+  }
+
+  private onChange(e: Event) {
+    // console.group('<how-long> onChange()');
+    // console.log('Event:', e);
+    // console.log('Event.target:', e.target);
+    // console.log('Event.target.value:', (e.target as HTMLInputElement).value);
+    // console.log('_lastChange (before):', this._lastChange);
+    // console.log('_timeoutID (before):', this._timeoutID);
+    // console.log('_currentISO (before):', this._currentISO);
+    // console.log('(Date.now() - this._lastChange):', (Date.now() - this._lastChange));
+    // console.log('((Date.now() - this._lastChange) > 60000):', ((Date.now() - this._lastChange) > 60000));
+
+    const input = e.target as HTMLInputElement
+    const when = this._setMS(`${input.value}Z`);
+    // console.log('when:', when);
+    // console.log(`${input.value}Z`);
+
+    if (when !== null) {
+      this._currentISO = this._dateToISO(when);
+
+      if (this._timeoutID !== null) {
+        clearTimeout(this._timeoutID);
+      }
+
+      if (this._timeoutMS > 0) {
+        this._refresh();
+      }
+
+      if (Date.now() - this._lastChange > 60000) {
+        this.dispatchEvent(
+          new CustomEvent('change', { detail: when })
+        );
+      }
+      this._lastChange = Date.now();
+    }
+    // console.log('_currentISO (after):', this._currentISO);
+    // console.log('_lastChange (after):', this._lastChange);
+    // console.groupEnd();
+
+    this._refresh();
   }
 
   connectedCallback(): void {
     super.connectedCallback();
-    console.group('how-long connectedCallback');
-    console.log('when:', this.when);
+    // console.group('<how-long> connectedCallback');
+    // console.log('when:', this.when);
+    this._timeoutMS = (this.refreshInterval > 0)
+      ? this.refreshInterval * 1000
+      : 0;
+
+    this._tzOffset = getTimeZoneOffset();
+    console.log('_tzOffset:', this._tzOffset);
 
     if (this.when.trim() !== '') {
-      this._setMS(this.when);
-      console.log('Calculated ms from when attribute:', this.ms);
-      console.log('s:', this.s);
-      console.log('min:', this.min);
-      console.log('h:', this.h);
-      console.log('d:', this.d);
-      console.log('w:', this.w);
-      console.log('mon:', this.mon);
+      const when = this._setMS(this.when);
+
+      if (when !== null) {
+        this._whenISO = this.when.slice(0, 16);
+        this._currentISO = `${this._whenISO}${this._tzOffset}`;
+
+        if (this._timeoutMS > 0) {
+          this._refresh();
+        }
+      }
     }
-    console.groupEnd();
+    // console.groupEnd();
   }
 
   render() {
+    const sign = (this.epoc < 0) ? '-' : '+';
     return html`
       <div class="card">
         <p class="input">
@@ -134,7 +225,7 @@ export class HowLong extends LitElement {
           <input
             id="when"
             type="datetime-local"
-            value="${this.when}"
+            .value=${this._whenISO}
             @change=${this.onChange} />
           <span>Enter the date you want to see how long ago (or how far in the future) it is from now.</span>
         </p>
@@ -142,6 +233,8 @@ export class HowLong extends LitElement {
           ? html`<p>Please enter a date and time in the field above.</p>`
           : html`
           <ul>
+            <li class="weekday">${this.wd}</li>
+            <li class="epoc">(Unix epoc ${sign} ${formatFloat(this.epoc / 1000)})</li>
             <how-long-item label="Milliseconds:" .value=${this.ms}></how-long-item>
             <how-long-item label="Seconds:" .value=${this.s}></how-long-item>
             <how-long-item label="Minutes:" .value=${this.min}></how-long-item>
@@ -182,6 +275,33 @@ export class HowLong extends LitElement {
 
     .card {
       padding: 2em;
+    }
+    ul {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      list-style: none;
+      margin: 0 auto;
+      max-width: 16rem;
+      padding: 0;
+    }
+    li.weekday:first-child {
+      margin-bottom: 1rem;
+    }
+    li.weekday:first-child:has(+ li.epoc) {
+      margin-bottom: 0;
+    }
+    li.weekday:first-child + li.epoc {
+      margin-bottom: 1rem;
+    }
+    li.weekday:last-child {
+      margin-top: 1rem;
+    }
+    li.epoc:has(+ li.weekday:last-child) {
+      margin-top: 1rem;
+    }
+    li.epoc + li.weekday:last-child {
+      margin-top: 0;
     }
   `
 }

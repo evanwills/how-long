@@ -16,20 +16,25 @@ export class HowLongItem extends LitElement {
   label: string = '';
 
   render() {
-    console.log('how-long-item render:', this.label, this.value);
+    // console.log('how-long-item render:', this.label, this.value);
     if (this.value <= 0) {
       return '';
     }
+
+    const val = (typeof this.value === 'string')
+      ? this.value
+      : formatFloat(this.value);
+
     return html`<li>
       <span>${this.label}</span>
-      <span>${formatFloat(this.value)}</span>
+      <span>${val}</span>
     </li>`;
   }
   static styles = css`
   li {
     display: grid;
-    grid-template-columns: 5.5rem auto;
-    grid-gap: 1em 2em;
+    grid-template-columns: 6.5rem auto;
+    grid-gap: 1em 1.25em;
     justify-content: start;
     text-align: left;
   }

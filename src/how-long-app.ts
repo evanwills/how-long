@@ -22,6 +22,20 @@ export class HowLongApp extends LitElement {
   @state()
   private _when: string = '';
 
+  _handleChange(e: CustomEvent) {
+    console.group('<how-long-app>._handleChange()');
+    console.log('Event:', e);
+    console.log('Event Detail:', e.detail);
+    console.groupEnd();
+    // const detail = e.detail;
+    // if (typeof detail === 'object' && detail !== null) {
+    //   const when = detail.when;
+    //   if (typeof when === 'string' && when.trim() !== '') {
+    //     this._when = when;
+    //   }
+    // }
+  }
+
   connectedCallback(): void {
     console.group('<how-long-app> connectedCallback');
     console.log('when (before):', this._when);
@@ -41,10 +55,19 @@ export class HowLongApp extends LitElement {
   }
 
   render() {
-    return html`<how-long .when=${this._when}></how-long>`;
+    return html`<how-long .when=${this._when} refreshInterval="1" @change=${this._handleChange}></how-long>`;
   }
 
-  static styles = css``
+  static styles = css`
+  :host {
+    align-items: center;
+    display: grid;
+    justify-items: center;
+    margin: 0 auto;
+    max-width: 600px;
+    padding: 2em;
+  }
+  `;
 }
 
 declare global {

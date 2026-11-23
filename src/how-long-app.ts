@@ -1,6 +1,7 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import './how-long.js';
+import './how-long.ts';
+import './what-time.ts'
 
 /**
  * An example element.
@@ -55,7 +56,10 @@ export class HowLongApp extends LitElement {
   }
 
   render() {
-    return html`<how-long .when=${this._when} refreshInterval="1" @change=${this._handleChange}></how-long>`;
+    return html`
+      <how-long .when=${this._when} refreshInterval="1" @change=${this._handleChange}></how-long>
+      <what-time></what-time>
+    `;
   }
 
   static styles = css`

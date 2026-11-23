@@ -8,11 +8,11 @@ export const formatFloat = (input: number) : string => {
     return _formatNum(num.replace('.00', ''));
   }
 
-  let parts = num.toString().split(".");
+  let parts = num.toString().split('.');
 
   parts[0] = _formatNum(parts[0]);
 
-  return parts.join(".");
+  return parts.join('.');
 };
 
 export const getDoW = (input: number) : string => {
@@ -35,3 +35,51 @@ export const getTimeZoneOffset = () : string => {
   const minutes = (Math.abs(offset) % 60).toString().padStart(2, '0');
   return `${sign}${hours}:${minutes}`;
 };
+
+export const getSecondsFromDuration = (
+  days : number,
+  hours: number,
+  minutes: number,
+  seconds: number,
+  future : boolean = true,
+) => {
+  const dir = (future === true)
+    ? 1
+    : -1;
+
+  return ((( days * 28400 ) + ( hours * 3600) + ( minutes * 60 ) + seconds) * dir);
+};
+
+export const forceNum = (input : unknown) : number => {
+  let _num = 0
+
+  if (typeof input === 'number') {
+    _num = input;
+  } else if (typeof input === 'string') {
+    _num = Number.parseInt(input, 10);
+  }
+
+  if (Number.isFinite(_num) === false || Number.isNaN(_num) === true) {
+    return 0;
+  }
+
+  return Math.abs(_num);
+}
+
+export const getDateStrFromTimestamp = (input: number, locale = 'en-AU') : string => {
+
+  console.group('getDateStrFromTimestamp()');
+  const when = new Date(input);
+  const options : Intl.DateTimeFormatOptions = {
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+    month: 'short',
+    weekday: 'short',
+    hour12: false,
+  };
+
+  return when.toLocaleString(locale, options);
+}

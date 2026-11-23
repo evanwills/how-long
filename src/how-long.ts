@@ -1,7 +1,7 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import './how-long-item.js';
 import { formatFloat, getDoW, getTimeZoneOffset } from './utils/general.utils.js';
+import './how-long-item.js';
 
 /**
  * An example element.
@@ -258,12 +258,13 @@ export class HowLong extends LitElement {
     }
 
     .input {
-      margin-bottom: 2em;
+      align-items: start;
       display: grid;
+      grid-gap: 0.5em;
       grid-template-columns: auto 1fr;
       grid-template-rows: auto auto;
-      grid-gap: 0.5em;
-      align-items: start;
+      margin-bottom: 2em;
+      max-width: 20rem;
     }
 
     .input span {
@@ -271,6 +272,10 @@ export class HowLong extends LitElement {
       grid-row: 2 / 3;
       font-size: 0.9em;
       color: #666;
+    }
+
+    .input input {
+      max-width: 13rem;
     }
 
     .card {
